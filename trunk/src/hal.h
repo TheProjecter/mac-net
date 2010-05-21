@@ -137,17 +137,12 @@ UINT8 hal_get_RF_power(void);
 void hal_set_RF_power(UINT8 index);
 
 #define hal_idle()      // do nothing in idle state
-
-
 // temperature
 UINT8 hal_get_temperature();
-
-
 
 /******************************************************
     ********************** Statistics **************
  ******************************************************/
-
 #define STATISTIC
 #ifdef STATISTIC
 extern UINT16 statistic_mac_tx;		// mac sent success
@@ -158,12 +153,6 @@ extern UINT16 statistic_mac_err	;	// mac sent fail
 extern UINT16 statistic_data_rx;		// received data for self node
 extern UINT16 statistic_data_tx;		// sent data from self
 extern UINT16 statistic_data_drop;		// data dropped due to send buffer full
-
 #endif
-
-
-
-
-
 
 #endif

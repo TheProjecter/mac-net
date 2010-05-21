@@ -1,79 +1,29 @@
 /****************************************************************
  * file:	mac.h
- * data:	2009-03-19
+ * data:	2010-05-21
  * description:	The MAC layer, define the parameters.
  ***************************************************************/
 
 #ifndef MAC_H
 #define MAC_H
 
-#include "phy.h"
+#include "queue.h"
 
-#define aMaxBE 5
-#define aMinBE 0
-#define aUnitBackoffPeriod 20		//in symbols
-#define macMaxCSMABackoffs 4
-#define MAC_DATA_RSSI_CRC 2             // RSSI and CRC byte lenghth in rx packet
-
-#define aMaxFrameRetries 2
-
-//default timeout on network responses
-#define MAC_GENERIC_WAIT_TIME      MSECS_TO_MACTICKS(20)
-#define MAC_ASSOC_WAIT_TIME        MAC_GENERIC_WAIT_TIME
-#define MAC_ORPHAN_WAIT_TIME       MAC_GENERIC_WAIT_TIME
-
-// Short address
-typedef UINT16 SADDR;
-
+// Mac layer's PAN Information Base
 typedef struct _MAC_PIB {
-	UINT32 macAckWaitDuration;
 	union _MAC_PIB_flags {
-		UINT32 val;
 		struct {
-			unsigned ackPending:1;
+			unsigned ackPending:1;		// Waiting for ACK
 			unsigned TxInProgress:1;	//MAC TX FSM state
-			unsigned macPending:1;		//mac CMD pending in the RX buffer
 		}bits;
 	}flags;
-	UINT16 macPANID;
-	UINT8 macDSN;
-	UINT16 macSAddr;
-	UINT8 macMaxAckRetries;
-	struct {
-		unsigned maxMaxCSMABackoffs:3;
-		unsigned macMinBE:2;
-	}misc;
-	UINT32 tx_start_time;		//time that packet was sent
-	UINT32 last_data_rx_time;	//time that last data rx packet was received that was accepted by this node
+	UINT16 macPANID;	// PAN ID
+	UINT16 macSAddr;	// My short address
 
-	UINT8 rxTail;			//tail pointer of mac_rx_frames
-	UINT8 rxHead;			//head pointer of mac_rx_frames
-volatile        BOOL rxFull;                    // Rx buffer is full if TRUE
         UINT8 rx_rssi;
 }MAC_PIB;
 
-//used for parsing of RX data
-typedef struct _MAC_RX_DATA {
-	UINT8 *orgpkt;			//original packet
-	UINT8 fcflsb;
-	UINT8 fcfmsb;
-        UINT16 DestPANID;
-        UINT16 SrcPANID;
-        SADDR DestAddr;			//dst short address
-	SADDR SrcAddr;			//src short address
-	UINT8 pload_offset;		//start of payload
-}MAC_RX_DATA;
-
-typedef struct _MAX_TX_DATA {
-	SADDR DestAddr;
-        UINT16 SrcPANID;
-        UINT16 DestPANID;
-	SADDR SrcAddr;         //src address, either short or long, this holds short address version
-	                       //if long is needed, then get this from HAL layer
-	UINT8 fcflsb;          //frame control bits specify header bits
-	UINT8 fcfmsb;
-}MAC_TX_DATA;
-
+// Mac FSM state enumeration
 typedef enum _MAC_STATE_ENUM {
 	MAC_STATE_IDLE,
 	MAC_STATE_COMMAND_START,
@@ -93,32 +43,50 @@ typedef struct _MAC_SERVICE {
 	LRWPAN_STATUS_ENUM status;
 }MAC_SERVICE;
 
-extern MAC_PIB mac_pib;
-extern MAC_SERVICE a_mac_service;
-extern MAC_STATE_ENUM mac_state;
-extern MAC_TX_DATA a_mac_tx_data;
-extern MAC_RX_DATA a_mac_rx_data;
-extern UINT8 mac_rx_frames[LRWPAN_RXBUFF_SIZE][LRWPAN_MAX_FRAME_SIZE];
 
-void mac_init(void);
-void mac_FSM(void);
-UINT16 mac_get_addr(void);
-UINT16 mac_get_PANID(void);
-LRWPAN_STATUS_ENUM mac_init_radio(void);
+/************************************************
+ * Structure: MAC Header(MHR), bytes as follows. CC2430 Page(170)
+ * Bytes	2			1		6			n
+ * 	|  Frame Control Field	|Data Sequence Number|Address Information| MAC Payload|
+ *
+ * Date: 2010-05-20
+ ***********************************************/
+typedef struct _MHR {
+	UINT8 fcflsb;	// FCF least significant byte
+	UINT8 fcfmsb;	// FCF most significant byte
+	UINT8 dsn;	// Data Sequence Number
 
-BOOL mac_rx_buff_empty(void);
-BOOL mac_rx_buff_full(void);
-UINT8 *mac_get_rx_packet(void);
-void mac_free_rx_packet();
-void macRxCallback(UINT8 *ptr, UINT8 rssi);
-void macTxCallback(void);
+	UINT16 dest_PANID;
+	UINT16 dest_addr;
+	UINT16 src_addr;
 
-
-BOOL mac_do_send(UINT16 dst_addr, UINT8 *ptr, UINT8 len);
+	struct data_entry *payload;
+}MHR;
 
 
-//SADDR macGetShortAddr();
-#define macGetShortAddr()   (mac_addr_tbl[0].saddr)
+/************************************************
+ 	**	External Variables	**
+ ***********************************************/
+#define MHR_LENGTH	9	// Mac Header length(not include payload)
+extern MHR mac_header;		// Mac Header
+extern struct queue mac_send_queue;	// Mac tx queue
+
+
+/************************************************
+ 	**	External Functions	**
+ ***********************************************/
+extern void mac_init();
+extern void mac_FSM();
+extern UINT16 mac_get_addr();
+extern UINT16 mac_get_PANID();
+extern UINT8 mac_get_rssi();	// Get the rssi value
+
+
+/************************************************
+ 	**	Constant Variable	**
+ ***********************************************/
+#define MAC_DATA_RSSI_CRC 2	// RSSI and CRC byte lenghth in rx packet
+
 
 #define mac_idle() (mac_state == MAC_STATE_IDLE)
 #define mac_busy() (mac_state != MAC_STATE_IDLE)

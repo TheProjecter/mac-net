@@ -2013,9 +2013,6 @@
     <name>$PROJ_DIR$\main.c</name>
   </file>
   <file>
-    <name>$PROJ_DIR$\nwk.c</name>
-  </file>
-  <file>
     <name>$PROJ_DIR$\phy.c</name>
   </file>
   <file>
@@ -2023,9 +2020,6 @@
   </file>
   <file>
     <name>$PROJ_DIR$\queue.c</name>
-  </file>
-  <file>
-    <name>$PROJ_DIR$\route_cache.c</name>
   </file>
   <file>
     <name>$PROJ_DIR$\trans.c</name>

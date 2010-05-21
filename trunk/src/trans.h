@@ -1,13 +1,13 @@
-/*
- * file: trans.h
- * date: 2009-10-27
- * brief: transaction layer staff,
+/************************************************
+ * File: present.h
+ *
+ * Description: transport layer staff, 
  * 		sending and receiving with formatted frames
- */
+ *
+ * Date: 2009-10-27
+ ************************************************/
 #ifndef TRANS_H
 #define TRANS_H
-
-// #include "dsr_route.h"		// to use user_send_data function
 
 #define FRAME_MAX_LEN	127
 
@@ -33,19 +33,11 @@
 #define PARA_TYPE_VERSION	0X10	// firmware version	TODO: not implemented
 #define PARA_TYPE_BAUDRATE	0x20
 
-
-
-void trans_init();
-BOOL trans_frm_avail();
-void trans_frm_parse();
-
-void trans_fram_assemble(UINT16 src_addr, UINT8 *ptr, UINT8 len);		// called when receive packet from other node
-
-void trans_put_statistic();	// return statistic info to PC/ARM
-
-void trans_fetch_from_mac();	// this is for temp use!!!
-
-void	trans_clear_statistic();
-void trans_set_baudrate(UINT8 val);
+/************************************************
+ 	**	External Functions	**
+ ***********************************************/
+extern void trans_init();
+extern BOOL trans_frm_avail();
+extern void trans_frm_parse();
 
 #endif

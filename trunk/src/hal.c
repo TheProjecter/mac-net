@@ -1,17 +1,17 @@
 /****************************************************************
  * file:	hal.c
  * date:	2009-03-12
- * description:	hardware abstraction layer for CC2430
+ * description:	hardware abstraction layer for CC2430--implement
  ***************************************************************/
 
 #include "hal.h"
 #include "types.h"
 
 /******************************************************
-    ********************** Statistics **************
+    ****************** Definition Statistics **************
  ******************************************************/
 #ifdef STATISTIC
-UINT16 statistic_mac_tx	=	0;		// mac sent success
+UINT16 statistic_mac_tx	=	0;	// mac sent success
 UINT16 statistic_mac_rx	=	0;	// received mac packets, excluding ack
 UINT16 statistic_mac_drop	=	0;	// drop due to mac buffer full
 UINT16 statistic_mac_err	=	0;	// mac sent fail
@@ -19,11 +19,9 @@ UINT16 statistic_mac_err	=	0;	// mac sent fail
 UINT16 statistic_data_rx	=	0;	// received data for self node
 UINT16 statistic_data_tx	=	0;	// sent data from self
 UINT16 statistic_data_drop	=	0;	// data dropped due to send buffer full or no route
-
 #endif
 
 static void hal_init_random();
-
 
 LRWPAN_STATUS_ENUM hal_init()
 {

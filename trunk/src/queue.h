@@ -1,6 +1,6 @@
 /**********************************************************
  * file: queue.h
- * data: 2009.04.26
+ * data: 2010-05-21
  * description: structure for queue
  *********************************************************/
 
@@ -12,9 +12,7 @@
 #define QUEUE_LENGTH 5
 
 struct data_entry {
-	UINT16 dst_addr;
-	UINT32 req_time;			// the time when a request sent for this packet
-	UINT8 p_len;			// The length of the data array, excluding nwk header
+	UINT8 p_len;				// The length of the data array, excluding nwk header
 	UINT8 data_arr[QUEUE_ENTRY_LENGTH];	// The array that contains wnk header and payload
 };
 
@@ -33,7 +31,7 @@ BOOL queue_is_full(struct queue *que);
 // If current queue is empty
 BOOL queue_is_empty(struct queue *que);
 // Add element to queue. We assume queue_is_full is invoked before
-void queue_add_element(struct queue *que, UINT8 len, UINT16 dst_addr, UINT8 *p_cksum);
+void queue_add_element(struct queue *que, UINT8 len, UINT8 *p_cksum);
 // Get next element in current queue, don't remove. We assume queue_is_empty is invoked before
 struct data_entry *queue_get_next(struct queue *que);
 // Romve next element in current queue, We assume queue_is_empty is called before

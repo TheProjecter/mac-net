@@ -5,43 +5,31 @@
   <configuration>
     <name>Debug</name>
     <file>
-      <name>$PROJ_DIR$\Debug\Exe\radio_test.d51</name>
-      <inputs>
-        <tool>
-          <name>XLINK</name>
-          <file>$TOOLKIT_DIR$\config\lnk51ew_cc2430.xcl</file>
-          <file>$TOOLKIT_DIR$\config\lnk_base.xcl</file>
-          <file>$PROJ_DIR$\Debug\Obj\hal.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\hal_radio.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\hal_timer.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\hal_uart.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\mac.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\main.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\nwk.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\phy.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\queue.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\route_cache.r51</file>
-          <file>$PROJ_DIR$\Debug\Obj\trans.r51</file>
-          <file>$TOOLKIT_DIR$\lib\clib\cl-pli-nlxd-1e16x01.r51</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\rt_test.c</name>
+      <name>$PROJ_DIR$\nwk.c</name>
       <outputs>
         <tool>
           <name>ICC8051</name>
-          <file>$PROJ_DIR$\Debug\Obj\rt_test.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\nwk.r51</file>
         </tool>
       </outputs>
       <inputs>
         <tool>
           <name>ICC8051</name>
-          <file>$PROJ_DIR$\dsr_route.h</file>
-          <file>$PROJ_DIR$\dsr_header.h</file>
+          <file>$PROJ_DIR$\nwk.h</file>
           <file>$PROJ_DIR$\types.h</file>
           <file>$PROJ_DIR$\dsr.h</file>
+          <file>$PROJ_DIR$\mac.h</file>
+          <file>$PROJ_DIR$\phy.h</file>
+          <file>$PROJ_DIR$\hal.h</file>
+          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
+          <file>$PROJ_DIR$\frame_defines.h</file>
           <file>$PROJ_DIR$\hal_uart.h</file>
+          <file>$PROJ_DIR$\hal_led.h</file>
+          <file>$PROJ_DIR$\hal_timer.h</file>
+          <file>$PROJ_DIR$\hal_radio.h</file>
+          <file>$PROJ_DIR$\queue.h</file>
+          <file>$PROJ_DIR$\trans.h</file>
+          <file>$PROJ_DIR$\route_cache.h</file>
         </tool>
       </inputs>
     </file>
@@ -84,6 +72,31 @@
       </outputs>
     </file>
     <file>
+      <name>$PROJ_DIR$\hal_radio.c</name>
+      <outputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\Debug\Obj\hal_radio.r51</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\hal_radio.h</file>
+          <file>$PROJ_DIR$\hal.h</file>
+          <file>$PROJ_DIR$\types.h</file>
+          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
+          <file>$PROJ_DIR$\frame_defines.h</file>
+          <file>$PROJ_DIR$\hal_uart.h</file>
+          <file>$PROJ_DIR$\hal_led.h</file>
+          <file>$PROJ_DIR$\hal_timer.h</file>
+          <file>$PROJ_DIR$\mac.h</file>
+          <file>$PROJ_DIR$\queue.h</file>
+          <file>$PROJ_DIR$\phy.h</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
       <name>$PROJ_DIR$\mac_test.c</name>
       <outputs>
         <tool>
@@ -105,6 +118,94 @@
           <file>$PROJ_DIR$\trans.h</file>
           <file>$PROJ_DIR$\mac.h</file>
           <file>$PROJ_DIR$\phy.h</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\route_cache.c</name>
+      <outputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\Debug\Obj\route_cache.r51</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\route_cache.h</file>
+          <file>$PROJ_DIR$\types.h</file>
+          <file>$PROJ_DIR$\nwk.h</file>
+          <file>$PROJ_DIR$\dsr.h</file>
+          <file>$PROJ_DIR$\mac.h</file>
+          <file>$PROJ_DIR$\phy.h</file>
+          <file>$PROJ_DIR$\hal.h</file>
+          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
+          <file>$PROJ_DIR$\frame_defines.h</file>
+          <file>$PROJ_DIR$\hal_uart.h</file>
+          <file>$PROJ_DIR$\hal_led.h</file>
+          <file>$PROJ_DIR$\hal_timer.h</file>
+          <file>$PROJ_DIR$\hal_radio.h</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\Debug\Exe\radio_test.d51</name>
+      <inputs>
+        <tool>
+          <name>XLINK</name>
+          <file>$TOOLKIT_DIR$\config\lnk51ew_cc2430.xcl</file>
+          <file>$TOOLKIT_DIR$\config\lnk_base.xcl</file>
+          <file>$PROJ_DIR$\Debug\Obj\hal.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\hal_radio.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\hal_timer.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\hal_uart.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\mac.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\main.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\phy.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\queue.r51</file>
+          <file>$PROJ_DIR$\Debug\Obj\trans.r51</file>
+          <file>$TOOLKIT_DIR$\lib\clib\cl-pli-nlxd-1e16x01.r51</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\rt_test.c</name>
+      <outputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\Debug\Obj\rt_test.r51</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\dsr_route.h</file>
+          <file>$PROJ_DIR$\dsr_header.h</file>
+          <file>$PROJ_DIR$\types.h</file>
+          <file>$PROJ_DIR$\dsr.h</file>
+          <file>$PROJ_DIR$\hal_uart.h</file>
+        </tool>
+      </inputs>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\hal_timer.c</name>
+      <outputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\Debug\Obj\hal_timer.r51</file>
+        </tool>
+      </outputs>
+      <inputs>
+        <tool>
+          <name>ICC8051</name>
+          <file>$PROJ_DIR$\hal_timer.h</file>
+          <file>$PROJ_DIR$\hal.h</file>
+          <file>$PROJ_DIR$\types.h</file>
+          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
+          <file>$PROJ_DIR$\frame_defines.h</file>
+          <file>$PROJ_DIR$\hal_uart.h</file>
+          <file>$PROJ_DIR$\hal_led.h</file>
+          <file>$PROJ_DIR$\hal_radio.h</file>
         </tool>
       </inputs>
     </file>
@@ -141,7 +242,6 @@
       <inputs>
         <tool>
           <name>ICC8051</name>
-          <file>$PROJ_DIR$\mac.h</file>
           <file>$PROJ_DIR$\phy.h</file>
           <file>$PROJ_DIR$\hal.h</file>
           <file>$PROJ_DIR$\types.h</file>
@@ -151,6 +251,8 @@
           <file>$PROJ_DIR$\hal_led.h</file>
           <file>$PROJ_DIR$\hal_timer.h</file>
           <file>$PROJ_DIR$\hal_radio.h</file>
+          <file>$PROJ_DIR$\mac.h</file>
+          <file>$PROJ_DIR$\queue.h</file>
         </tool>
       </inputs>
     </file>
@@ -173,38 +275,9 @@
           <file>$PROJ_DIR$\hal_led.h</file>
           <file>$PROJ_DIR$\hal_timer.h</file>
           <file>$PROJ_DIR$\hal_radio.h</file>
-          <file>$PROJ_DIR$\trans.h</file>
-          <file>$PROJ_DIR$\nwk.h</file>
-          <file>$PROJ_DIR$\dsr.h</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\nwk.c</name>
-      <outputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\Debug\Obj\nwk.r51</file>
-        </tool>
-      </outputs>
-      <inputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\nwk.h</file>
-          <file>$PROJ_DIR$\types.h</file>
-          <file>$PROJ_DIR$\dsr.h</file>
           <file>$PROJ_DIR$\mac.h</file>
-          <file>$PROJ_DIR$\phy.h</file>
-          <file>$PROJ_DIR$\hal.h</file>
-          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
-          <file>$PROJ_DIR$\frame_defines.h</file>
-          <file>$PROJ_DIR$\hal_uart.h</file>
-          <file>$PROJ_DIR$\hal_led.h</file>
-          <file>$PROJ_DIR$\hal_timer.h</file>
-          <file>$PROJ_DIR$\hal_radio.h</file>
           <file>$PROJ_DIR$\queue.h</file>
           <file>$PROJ_DIR$\trans.h</file>
-          <file>$PROJ_DIR$\route_cache.h</file>
         </tool>
       </inputs>
     </file>
@@ -245,35 +318,7 @@
           <file>$PROJ_DIR$\queue.h</file>
           <file>$PROJ_DIR$\types.h</file>
           <file>$PROJ_DIR$\hal_uart.h</file>
-          <file>$PROJ_DIR$\nwk.h</file>
-          <file>$PROJ_DIR$\dsr.h</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\route_cache.c</name>
-      <outputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\Debug\Obj\route_cache.r51</file>
-        </tool>
-      </outputs>
-      <inputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\route_cache.h</file>
-          <file>$PROJ_DIR$\types.h</file>
-          <file>$PROJ_DIR$\nwk.h</file>
-          <file>$PROJ_DIR$\dsr.h</file>
           <file>$PROJ_DIR$\mac.h</file>
-          <file>$PROJ_DIR$\phy.h</file>
-          <file>$PROJ_DIR$\hal.h</file>
-          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
-          <file>$PROJ_DIR$\frame_defines.h</file>
-          <file>$PROJ_DIR$\hal_uart.h</file>
-          <file>$PROJ_DIR$\hal_led.h</file>
-          <file>$PROJ_DIR$\hal_timer.h</file>
-          <file>$PROJ_DIR$\hal_radio.h</file>
         </tool>
       </inputs>
     </file>
@@ -297,36 +342,8 @@
           <file>$PROJ_DIR$\hal_led.h</file>
           <file>$PROJ_DIR$\hal_timer.h</file>
           <file>$PROJ_DIR$\hal_radio.h</file>
-          <file>$PROJ_DIR$\nwk.h</file>
-          <file>$PROJ_DIR$\dsr.h</file>
+          <file>$PROJ_DIR$\mac.h</file>
           <file>$PROJ_DIR$\queue.h</file>
-          <file>$PROJ_DIR$\mac.h</file>
-          <file>$PROJ_DIR$\phy.h</file>
-          <file>$PROJ_DIR$\route_cache.h</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\hal_radio.c</name>
-      <outputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\Debug\Obj\hal_radio.r51</file>
-        </tool>
-      </outputs>
-      <inputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\hal_radio.h</file>
-          <file>$PROJ_DIR$\hal.h</file>
-          <file>$PROJ_DIR$\types.h</file>
-          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
-          <file>$PROJ_DIR$\frame_defines.h</file>
-          <file>$PROJ_DIR$\hal_uart.h</file>
-          <file>$PROJ_DIR$\hal_led.h</file>
-          <file>$PROJ_DIR$\hal_timer.h</file>
-          <file>$PROJ_DIR$\mac.h</file>
-          <file>$PROJ_DIR$\phy.h</file>
         </tool>
       </inputs>
     </file>
@@ -348,28 +365,6 @@
           <file>$PROJ_DIR$\hal_uart.h</file>
           <file>$PROJ_DIR$\hal_led.h</file>
           <file>$PROJ_DIR$\hal_timer.h</file>
-          <file>$PROJ_DIR$\hal_radio.h</file>
-        </tool>
-      </inputs>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\hal_timer.c</name>
-      <outputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\Debug\Obj\hal_timer.r51</file>
-        </tool>
-      </outputs>
-      <inputs>
-        <tool>
-          <name>ICC8051</name>
-          <file>$PROJ_DIR$\hal_timer.h</file>
-          <file>$PROJ_DIR$\hal.h</file>
-          <file>$PROJ_DIR$\types.h</file>
-          <file>$TOOLKIT_DIR$\inc\ioCC2430.h</file>
-          <file>$PROJ_DIR$\frame_defines.h</file>
-          <file>$PROJ_DIR$\hal_uart.h</file>
-          <file>$PROJ_DIR$\hal_led.h</file>
           <file>$PROJ_DIR$\hal_radio.h</file>
         </tool>
       </inputs>
