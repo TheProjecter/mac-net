@@ -1,6 +1,6 @@
 /****************************************************************
  * file:	radio.h
- * date:	2009-03-13
+ * date:	2010-05-21
  * description:	radio interface for CC2430
  ***************************************************************/
 
@@ -9,6 +9,22 @@
 
 #include "hal.h"
 
+/************************************************
+ 	**	External Functions	**
+ ***********************************************/
+extern LRWPAN_STATUS_ENUM radio_init();
+extern LRWPAN_STATUS_ENUM radio_send_packet();
+// Buffer management
+extern BOOL radio_buffer_full();
+extern BOOL radio_buffer_empty();
+extern UINT8 radio_get_frm_length();
+extern UINT8 radio_get_byte(UINT16 index);
+extern void radio_drop_bytes(UINT8 num);
+
+/************************************************
+ 	**	External Variables	**
+ ***********************************************/
+
 #define RADIO_DEFAULT_CHANNEL	20
 #define RADIO_DEFAULT_PANID	0x1347
 #define UNIT_BACKOFF_PERIOD	20
@@ -16,15 +32,8 @@
 #define MIN_BE			0
 #define MAX_CSMA_BACKOFFS	4
 
-LRWPAN_STATUS_ENUM radio_init();
-LRWPAN_STATUS_ENUM radio_send_packet(UINT8 flen, UINT8 *frm);
-static void radio_init_addr();
-static LRWPAN_STATUS_ENUM radio_set_frequency(UINT8 channel);
-// Callback functions
+#define PACKET_FOOTER_SIZE 2    //bytes after the payload
 
-void phy_tx_start_callback(void);
-void phy_tx_end_callBack(void);
-void usrIntCallback();
 // interrupt related stuff
 #define INT_ENABLE_RF(on)	{ (on) ? (IEN2 |= 0x01) : (IEN2 &= ~0x01); }
 #define INT_ENABLE_RFERR(on)	{ RFERRIE = on; }
@@ -110,8 +119,6 @@ void usrIntCallback();
 #define ISFLUSHTX   do{RFST = 0xE7;                       }while(0)
 #define ISACK       do{RFST = 0xE8;                       }while(0)
 #define ISACKPEND   do{RFST = 0xE9;                       }while(0)
-
-#define PACKET_FOOTER_SIZE 2    //bytes after the payload
 
 #endif
 

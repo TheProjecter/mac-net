@@ -1,6 +1,6 @@
 /****************************************************************
  * file:	radio.c
- * date:	2009-03-13
+ * date:	2010-05-21
  * description:	radio interface for CC2430
  ***************************************************************/
 
@@ -8,9 +8,28 @@
 #include "mac.h"
 #include "phy.h"
 
+/************************************************
+ 	**	Local functions		**
+ ***********************************************/
+static void radio_init_addr();
+static void radio_buffer_init();
+static UINT16 radio_free_bytes();
+
+/************************************************
+ 	**	Local variables		**
+ ***********************************************/
+#define RADIO_RX_BUFFER_SIZE	(LRWPAN_RXBUFF_SIZE * LRWPAN_MAX_FRAME_SIZE)
+static UINT8 radio_rx_buffer[RADIO_RX_BUFFER_SIZE];
+static UINT16 radio_rx_head;	// Write empty
+static UINT16 radio_rx_tail;	// Read here
+static BOOL radio_rx_full;	// Radio rx buffer full?
+
 LRWPAN_STATUS_ENUM radio_init()
 {
 	UINT16 freq;
+
+	// Initialize radio buffer
+	radio_buffer_init();
 
 	freq = 357 + 5 * (RADIO_DEFAULT_CHANNEL - 11);
 	FSCTRLL = (UINT8)freq;
@@ -152,21 +171,30 @@ void do_backoff(void)
 	}while(nb <= MAX_CSMA_BACKOFFS);
 }
 
-//transmit packet: flen should be less than 125
-LRWPAN_STATUS_ENUM radio_send_packet(UINT8 flen, UINT8 *frm)
+/************************************************
+ * Description: Use radio to tx packet. The packet
+ * 	data is located in mac_header.payload.
+ * 	The packet should not longer than 125 bytes.
+ * 	Since we mac layer spillted the bigger data
+ * 	into packets no longer than 116 bytes. So, we
+ * 	just send in this radio_send_packet();
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	LRWPAN_STATUS_ENUM--The tx result, SUCCESS/BUSY
+ *
+ * Date: 2010-05-20
+ ***********************************************/
+LRWPAN_STATUS_ENUM radio_send_packet()
 {
-	UINT8 len;
-	LRWPAN_STATUS_ENUM res;
+	UINT8 len;		// Packet total length
+	LRWPAN_STATUS_ENUM res;	// Send result
+	UINT8 *data_pointer = NULL;
+	struct data_entry *usr_data = mac_header.payload;
 
-	//total length, does not include length byte itself
-	//last two bytes are the FCS bytes that are added automatically
-	len = flen + PACKET_FOOTER_SIZE;
-
-	if (len > 127)
-	{
-		//packet size is too large!
-		return(LRWPAN_STATUS_PHY_TX_PKT_TOO_BIG);
-	}
+	// Load packet length
+	len = MHR_LENGTH + usr_data->p_len + PACKET_FOOTER_SIZE;
 
 	// Clearing RF interrupt flags and enabling RF interrupts.
 	if(FSMSTATE == 6 && RXFIFOCNT > 0)
@@ -175,17 +203,30 @@ LRWPAN_STATUS_ENUM radio_send_packet(UINT8 flen, UINT8 *frm)
 		ISFLUSHRX;
 	}
 
-	RFIF &= ~IRQ_TXDONE;      //Clear the RF TXDONE flag
-	INT_SETFLAG_RF(INT_CLR);  //Clear processor interrupt flag
+	RFIF &= ~IRQ_TXDONE;		//Clear the RF TXDONE flag
+	INT_SETFLAG_RF(INT_CLR);	//Clear processor interrupt flag
 
-	//write packet length
-	RFD = len;
-	//write the packet. Use 'flen' as the last two bytes are added automatically
-	//At some point, change this to use DMA
-	while (flen)
+	RFD = len;			// Write packet length
+	/***********************************************
+	 * Write the packet. Use 'flen' as the last two
+	 * bytes are added automatically. At some point,
+	 * change this to use DMA
+	 **********************************************/
+	// First, write MAC header
+	len = MHR_LENGTH;
+	data_pointer = (UINT8 *)&mac_header;
+	while (len)
 	{
-		RFD = *frm++;
-		flen--;
+		RFD = *data_pointer++;
+		len--;
+	}
+	// Then, write payload
+	len = usr_data->p_len;
+	data_pointer = usr_data->data_arr;
+	while (len)
+	{
+		RFD = *data_pointer++;
+		len--;
 	}
 
 	// If the RSSI value is not valid, enable receiver
@@ -202,8 +243,6 @@ LRWPAN_STATUS_ENUM radio_send_packet(UINT8 flen, UINT8 *frm)
 
 	if(FSMSTATE > 30)  //is TX active?
 	{
-		// Asserting the status flag and enabling ACK reception if expected.
-		phy_tx_start_callback();
 		res = LRWPAN_STATUS_SUCCESS;
 		RFIM |= IRQ_TXDONE;             //enable IRQ_TXDONE interrupt
 	}
@@ -213,7 +252,7 @@ LRWPAN_STATUS_ENUM radio_send_packet(UINT8 flen, UINT8 *frm)
 		res = LRWPAN_STATUS_PHY_CHANNEL_BUSY;
 		RFIM &= ~IRQ_TXDONE;     //mask interrupt
 	}
-	return(res);
+	return res;
 }
 
 //interrupt for RF error
@@ -247,20 +286,10 @@ __interrupt static void rf_error_isr()
 #pragma vector=RF_VECTOR
 __interrupt static void rf_isr(void)
 {
-//	UINT8 i, j;		// debug
-
-	UINT8 flen;
+	UINT8 flen;		// Packet length
+	UINT16 current_head;	// Current buffer write index
 	UINT8 enabledAndActiveInterrupt;
-	UINT8 *ptr, *rx_frame;
-	UINT8 ack_bytes[5];
-	UINT8 crc;
-	//define alternate names for readability in this function
-#define  fcflsb ack_bytes[0]
-#define  fcfmsb ack_bytes[1]
-#define  dstmode ack_bytes[2]
-#define  srcmode ack_bytes[3]
 
-	
 	INT_GLOBAL_ENABLE(INT_OFF);
 	enabledAndActiveInterrupt = RFIF;
 	RFIF = 0x00;                        // Clear all radio interrupt flags
@@ -269,120 +298,69 @@ __interrupt static void rf_isr(void)
 	// complete frame has arrived
 	if(enabledAndActiveInterrupt & IRQ_FIFOP)
 	{
-		//if last packet has not been processed, we just
-		//read it but ignore it.
-		ptr = NULL; //temporary pointer
+		// Get packet length
 		flen = RFD & 0x7f;  //read the length
-		if (flen == LRWPAN_ACKFRAME_LENGTH)
+		if ( flen >= MHR_LENGTH )
 		{
-			//this should be an ACK. read the packet
-			ack_bytes[0]= flen;
-			ack_bytes[1] = RFD;	//LSB Frame Control Field
-			ack_bytes[2] = RFD;	//MSB Frame Control Field
-			ack_bytes[3] = RFD;	//dsn
-			ack_bytes[4] = RFD;	//RSSI
-			crc = RFD;
-			//check CRC
-			if (crc & 0x80)
+			LED_RED_TOGGLE();	// Debug, used to indicate success receive
+
+			// If we have enough free space, length itself is included
+			if (radio_free_bytes() >= flen + 1)
 			{
-				// CRC ok, perform callback if this is an ACK
-				macRxCallback(ack_bytes, ack_bytes[4]);
-			}
+				// Load the entire frame to buffer
 
-		}
-		else
-		{
-			//read the fcflsb, fcfmsb
-			fcflsb = RFD;
-			fcfmsb = RFD;
-
-			if (!mac_rx_buff_full())
-			{
-				//MAC TX buffer has room allocate new memory space
-				//read the length
-				rx_frame = mac_rx_frames[mac_pib.rxHead];
-
-				mac_pib.rxHead++;
-				if (mac_pib.rxHead >= LRWPAN_RXBUFF_SIZE)
-					mac_pib.rxHead = 0;
-				if (!(mac_pib.rxFull) && mac_pib.rxTail == mac_pib.rxHead)
-					mac_pib.rxFull = TRUE;
-
-				ptr = rx_frame;
-			}
-#ifdef STATISTIC
-			else
-			{
-				statistic_mac_drop++;
-			}
-#endif
-
-			// at this point, if ptr is null, then either
-			// the MAC RX buffer is full or there is  no
-			// free memory for the new frame, or the packet is
-			// going to be rejected because of addressing info.
-			// In these cases, we need to
-			// throw the RX packet away
-			if (ptr == NULL)
-			{
-				//just flush the bytes
-				goto do_rxflush;
-			}else
-			{
-
-			LED_RED_TOGGLE();	// debug use to indicate success receive
-
-				//save packet, including the length
-				*ptr = flen; ptr++;
-
-		//		j = flen;		// debug
-
-				//save the fcflsb, fcfmsb bytes
-				*ptr = fcflsb; ptr++; flen--;
-				*ptr = fcfmsb; ptr++; flen--;
-				//get the rest of the bytes
-				while (flen) { *ptr = RFD;  flen--; ptr++; }
-			
-		/*	
-				// for debug
-				uart_putstr("r: ");
-				for(i = 0; i < j; i++) {
-					uart_puthex(*(rx_frame+i));
-					uart_putch(' ');
-				}
-			
-*/
-				//do RX callback
-				//check the CRC
-				if (*(ptr-1) & 0x80)
+				// Keep current radio_rx_head avoid bad CRC involved
+				// roll back.
+				current_head = radio_rx_head;
+				// First, load frame length--this length is not include
+				// length byte itself, but include RSSI and CRC bytes.
+				radio_rx_buffer[radio_rx_head++] = flen;
+				// Load frame
+				while( flen )
 				{
-					//CRC good
-					//change the RSSI byte from 2's complement to unsigned number
-					*(ptr-2) = *(ptr-2) + 0x80;
+					// Round up
+					if ( radio_rx_head >= RADIO_RX_BUFFER_SIZE )
+						radio_rx_head = 0;
+					// Write to buffer
+					radio_rx_buffer[radio_rx_head++] = RFD;
+
+					// Decrease
+					--flen;
+				}
+				
+				// Since we don't know the CRC before we read the RFD,
+				// So, the CRC check can't before RxBuffer allocated.
+				if ( radio_rx_buffer[(radio_rx_head-1+RADIO_RX_BUFFER_SIZE)%RADIO_RX_BUFFER_SIZE] & 0x80)
+				{
+					// Ok, we received a good frame
+					// CRC good change the RSSI byte from 2's complement to unsigned number
+					radio_rx_buffer[(radio_rx_head-2+RADIO_RX_BUFFER_SIZE)%RADIO_RX_BUFFER_SIZE] += 0x80;
+
+					// Update the buffer state
+					if ( radio_rx_head == radio_rx_tail )
+					{
+						radio_rx_full = TRUE;
+					}
+
 #ifdef STATISTIC
 					statistic_mac_rx++;
 #endif
-					//phyRxCallback();
-					macRxCallback(rx_frame, *(ptr-2));
-					usrIntCallback();
-				} else {
-					// crc bad, remove from the head
-
-					if (mac_pib.rxHead == 0)
-						mac_pib.rxHead = LRWPAN_RXBUFF_SIZE - 1;
-					else 
-						mac_pib.rxHead --;
-
-					mac_pib.rxFull  = FALSE;
-
 				}
-
-
+				else
+				{
+					// Bad CRC, roll back
+					radio_rx_head = current_head;
+				}
+			}
+			else
+			{
+#ifdef STATISTIC
+				statistic_mac_drop++;
+#endif
 			}
 		}
 
 		//flush any remaining bytes
-do_rxflush:
 		ISFLUSHRX;
 		ISFLUSHRX;
 
@@ -397,18 +375,139 @@ do_rxflush:
 	// Transmission of a packet is finished. Enabling reception of ACK if required.
 	if(enabledAndActiveInterrupt & IRQ_TXDONE)
 	{
-		//Finished TX, do call back
-		LED_GREEN_TOGGLE();		// debug, sent success
-//		uart_putch('F');
+		// Finished TX, do call back
+		LED_GREEN_TOGGLE();		// DEBUG, sent success
+
+		// Set tx finished flag
 		phy_tx_end_callback();
-		macTxCallback();
 		// Clearing the tx done interrupt enable
 		RFIM &= ~IRQ_TXDONE;
 	}
 	INT_GLOBAL_ENABLE(INT_ON);
+}
 
-#undef  fcflsb
-#undef  fcfmsb
-#undef  dstmode
-#undef  srcmode
+/************************************************
+ *
+ *	Radio Rx Buffer Management
+ *
+ ***********************************************/
+
+/************************************************
+ * Description: Init Rx buffer to empty.
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	None.
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+void radio_buffer_init()
+{
+	radio_rx_head = 0;
+	radio_rx_tail = 0;
+	radio_rx_full = FALSE;
+}
+
+/************************************************
+ * Description: Get the buffer's state--Full/Empty
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	TRUE -- If radio rx buffer is full
+ * 	FALSE -- If not
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+BOOL radio_buffer_full()
+{
+	return radio_rx_full;
+}
+
+/************************************************
+ * Description: Get the buffer's state--Full/Empty
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	TRUE -- If radio rx buffer is empty
+ * 	FALSE -- If not
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+BOOL radio_buffer_empty()
+{
+	return ( radio_rx_full == FALSE && radio_rx_head == radio_rx_tail );
+}
+
+/************************************************
+ * Description: Get a byte from radio rx buffer
+ * 	at [index], but NOT remove the byte.
+ *
+ * Arguments:
+ * 	index -- Indicate the index in radio rx buffer
+ * Return:
+ * 	UINT8 -- Byte content at [index]
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+UINT8 radio_get_byte( UINT16 index )
+{
+	return radio_rx_buffer[index%RADIO_RX_BUFFER_SIZE];
+}
+
+/************************************************
+ * Description: Get the first frame's length.
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	UINT8 -- The first frame's length
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+UINT8 radio_get_frm_length()
+{
+	return radio_rx_buffer[radio_rx_tail];
+}
+
+/************************************************
+ * Description: Move the radio_rx_tail index to
+ * 	[radio_rx_tail + num] for drop num bytes in buffer.
+ * 	We assume the user has ensured the index's range
+ *
+ * Arguments:
+ *	num -- Number of dropped bytes
+ * Return:
+ * 	None.
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+void radio_drop_bytes(UINT8 num)
+{
+	// Move the read pointer index to [radio_tx_tail + num]
+	radio_rx_tail = (radio_rx_tail + num)%RADIO_RX_BUFFER_SIZE;
+	// Update state
+	radio_rx_full = FALSE;
+}
+
+/************************************************
+ * Description: The free space(bytes) in radio rx
+ * 	buffer.
+ *
+ * Arguments:
+ * 	None.
+ * Return:
+ * 	UINT16 -- The number of bytes free for writing.
+ *
+ * Date: 2010-05-21
+ ***********************************************/
+UINT16 radio_free_bytes()
+{
+	if ( radio_buffer_empty() )
+	{
+		return RADIO_RX_BUFFER_SIZE;
+	}
+	return (radio_rx_head - radio_rx_tail + RADIO_RX_BUFFER_SIZE)%RADIO_RX_BUFFER_SIZE;
 }

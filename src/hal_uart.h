@@ -1,6 +1,6 @@
 /****************************************************************
  * file:	hal_uart.h
- * date:	2009-03-12
+ * date:	2010-05-21
  * description:	uart support functions for CC2430
  ***************************************************************/
 #ifndef HAL_UART_H
@@ -8,20 +8,24 @@
 
 #include "types.h"
 
-#define UART_RX_BUFSIZE	480	//
-extern volatile UINT8 uart_rxbuf[UART_RX_BUFSIZE];
-extern BOOL uart_data_avail;    // Data available bit
-extern  volatile UINT16 rxbuf_head;
-extern   UINT16 rxbuf_tail;
+#define UART_RX_BUFSIZE	480
 
 // UART API, invoked by HAL layer
-void uart_init();
-BOOL uart_getch_rdy();
-UINT8 uart_getch();
-void uart_putch(UINT8 c);
-void uart_putstr(const char * str);
-void uart_puthex (UINT8 x);
-
+/************************************************
+ 	**	External Functions	**
+ ***********************************************/
+extern void uart_init();
+extern UINT8 uart_getch_blocked();
+extern UINT8 uart_rdy_getch();
+extern void uart_putch(UINT8 c);
+extern void uart_putstr(const char * str);
+extern void uart_puthex (UINT8 x);
+extern void uart_move_tail(UINT16 index);
+extern void uart_flush_all();
+extern INT32 uart_first_indexof(UINT8 ch);
+extern UINT16 uart_unread_bytes(UINT16 base);
+extern BOOL uart_buffer_full();
+extern BOOL uart_buffer_empty();
 
 // The macros in this section simplify UART operation.
 #define HIGH_STOP                   0x02

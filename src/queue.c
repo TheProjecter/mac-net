@@ -1,26 +1,17 @@
 /**********************************************************
  * file: queue.c
- * data: 2009.04.26
+ * data: 2010-05-21
  * description: Operations for queue
  *********************************************************/
 #include "queue.h"
 #include "hal_uart.h"
-#include "nwk.h"
+#include "mac.h"
 
 void queue_init(struct queue *que)
 {
-	int i;
-	struct data_entry *temp = que->queue_data;
-
 	que->queue_head = 0;
 	que->queue_tail = 0;
 	que->queue_full = FALSE;
-
-	for ( i = 0; i < QUEUE_LENGTH; i++ )
-	{
-		(temp + i)->dst_addr = 0;
-		(temp + i)->req_time = 0;
-	}
 }
 
 BOOL queue_is_full(struct queue *que)
@@ -34,28 +25,22 @@ BOOL queue_is_empty(struct queue *que)
 }
 
 // load data from UART buffer to queue
-void queue_add_element(struct queue *que, UINT8 len, UINT16 dst_addr, UINT8 *p_cksum)
+void queue_add_element(struct queue *que, UINT8 len, UINT8 *p_cksum)
 {
 	UINT8 i;
 	UINT8 * p;
 	UINT8 c;
 	struct data_entry *temp = (que->queue_data + que->queue_head);
 
-	temp->dst_addr = dst_addr;
-	temp->req_time = 0;
 	temp->p_len = len;
 
 	p = temp->data_arr;
-	for (i = 0; i < sizeof(nwk_opt_t); i++)
-		*(p+i) = 0;			// reset to zero
 
-	p = temp->data_arr + sizeof (nwk_opt_t);
 	for (i = 0; i < len; i++) {
-		c = uart_getch();
+		c = uart_rdy_getch();
 		*(p + i) = c;
 		*(p_cksum) += c;		// update checksum
 	}
-
 
 	que->queue_head++;
 	if ( que->queue_head >= QUEUE_LENGTH )
@@ -87,10 +72,7 @@ void queue_remove_next(struct queue *que)
 	}
 
 	// Clear the full indicator if it is true
-	if ( que->queue_full )
-	{
-		que->queue_full = FALSE;
-	}
+	que->queue_full = FALSE;
 }
 
 /*
@@ -98,19 +80,15 @@ void queue_remove_next(struct queue *que)
  */
 void queue_remove_head(struct queue *que)
 {
-	//TODO: sanity check
-	
-	struct data_entry *temp = (que->queue_data + que->queue_head);
+	// Not empty
+	if (queue_is_empty(que))
+	{
+		return;
+	}
 
-	temp->dst_addr = 0;
-	temp->req_time = 0;
-	temp->p_len = 0;
+	// Mark the last enqueued data invalid.
+	que->queue_head = (que->queue_head - 1 + QUEUE_LENGTH)%QUEUE_LENGTH;
 
-	if (que->queue_head == 0)
-		que->queue_head = QUEUE_LENGTH - 1;
-	else
-		que->queue_head --;
-	
-	que->queue_full = FALSE;		// of course queue is not full now
-
+	// Update state flag.
+	que->queue_full = FALSE;
 }
